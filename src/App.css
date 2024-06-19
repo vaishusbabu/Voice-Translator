@@ -74,6 +74,7 @@ body {
   overflow: auto; 
   background: #edeff0; 
   text-align: left; 
+  position: relative;
   } 
   
   .row2 textarea { 
@@ -166,4 +167,11 @@ body {
 .audioButton:disabled {
     background-color: #d9d9d9;
     cursor: not-allowed;
+}
+.buttons{
+  display:flex;
+  gap: 10px;
+position: absolute ;
+bottom: 10px;
+right: 10px;
 }

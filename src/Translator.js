@@ -1,8 +1,8 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import './App.css';
 import languageList from './language.json';
 import axios from 'axios';
-import { AudioMutedOutlined, AudioOutlined, SwapOutlined } from '@ant-design/icons';
+import { AudioMutedOutlined, AudioOutlined, CopyOutlined, ShareAltOutlined, SoundOutlined, SwapOutlined } from '@ant-design/icons';
 
 export default function Translator() {
     const [inputFormat, setInputFormat] = useState('en');
@@ -94,11 +94,51 @@ export default function Translator() {
         }
     };
 
+    useEffect(() => {
+        window.speechSynthesis.onvoiceschanged = () => {
+            const voices = window.speechSynthesis.getVoices();
+            console.log('Voices loaded:', voices);
+        };
+    }, []);
+
+    const handleSpeak = () => {
+        if (translatedText && translatedText !== 'Translation' && translatedText !== 'Translating...' && translatedText !== 'Error in translation') {
+            const utterance = new SpeechSynthesisUtterance(translatedText);
+            utterance.lang = outputFormat;
+
+            const voices = window.speechSynthesis.getVoices();
+            console.log('Available voices:', voices);
+
+            const supportedVoices = voices.filter(voice => voice.lang.startsWith(outputFormat.split('-')[0]));
+            console.log(`Supported voices for ${outputFormat}:`, supportedVoices);
+
+            if (supportedVoices.length > 0) {
+                utterance.voice = supportedVoices[0];
+                utterance.onerror = (event) => {
+                    console.error('Speech synthesis error:', event.error);
+                };
+                window.speechSynthesis.speak(utterance);
+            } else {
+                console.warn(`Speech synthesis for language ${outputFormat} is not supported.`);
+                alert(`Speech synthesis for language ${outputFormat} is not supported.`);
+            }
+        }
+    };
+
+    const handleCopy = () => {
+        if (translatedText && translatedText !== 'Translation' && translatedText !== 'Translating...' && translatedText !== 'Error in translation') {
+            navigator.clipboard.writeText(translatedText).then(() => {
+                console.log("copied!");
+            }).catch(err => {
+                console.error('Failed to copy text: ', err);
+            });
+        }
+    };
+
     return (
         <div className="container">
             <div className="row1">
-                <select value={inputFormat}
-                    onChange={(e) => setInputFormat(e.target.value)}>
+                <select value={inputFormat} onChange={(e) => setInputFormat(e.target.value)}>
                     {Object.keys(languageList).map((key, index) => {
                         const language = languageList[key];
                         return (
@@ -136,10 +176,21 @@ export default function Translator() {
                         placeholder='Enter Text'
                         onChange={(e) => setInputText(e.target.value)} />
                 </div>
-                <button onClick={startRecognition} disabled={recognizing} className="audioButton">
+                <button onClick={startRecognition} disabled={recognizing} >
                     {recognizing ? <AudioOutlined /> : <AudioMutedOutlined />}
                 </button>
-                <div className="outputText">{translatedText}</div>
+                <div className="outputText">{translatedText}
+                    {translatedText !== 'Translation' && translatedText !== 'Translating...' && translatedText !== 'Error in translation' && (
+                        <>
+                            <div className='buttons'>
+                                <SoundOutlined />
+                                <CopyOutlined />
+                                <ShareAltOutlined />
+                            </div>
+                        </>
+                    )}
+                </div>
+
             </div>
             <div className="row3">
                 <button className='btn'

@@ -1,12 +1,13 @@
 
 import './App.css';
+import Translator from './Translator';
 
 function App() {
   return (
-    <div className="App">
-
+    <div >
+      <Translator />
     </div>
   );
-}     
+}
 
 export default App;

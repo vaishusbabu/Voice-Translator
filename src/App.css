@@ -147,4 +147,23 @@ body {
   background: rgb(173, 172, 172); 
   border-radius: 4px; 
   } 
-  
+  .audioButton {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background-color:rgb(129, 123, 123);
+    color: white;
+    border: none;
+    padding: 10px;
+    cursor: pointer;
+    border-radius: 5px;
+    font-size: 24px;
+    width: 50px;
+    height: 50px;
+    margin-left: 10px;
+}
+
+.audioButton:disabled {
+    background-color: #d9d9d9;
+    cursor: not-allowed;
+}

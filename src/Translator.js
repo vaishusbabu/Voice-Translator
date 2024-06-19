@@ -136,7 +136,7 @@ export default function Translator() {
                         placeholder='Enter Text'
                         onChange={(e) => setInputText(e.target.value)} />
                 </div>
-                <button onClick={startRecognition} disabled={recognizing}>
+                <button onClick={startRecognition} disabled={recognizing} className="audioButton">
                     {recognizing ? <AudioOutlined /> : <AudioMutedOutlined />}
                 </button>
                 <div className="outputText">{translatedText}</div>

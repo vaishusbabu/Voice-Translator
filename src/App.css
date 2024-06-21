@@ -175,3 +175,8 @@ position: absolute ;
 bottom: 10px;
 right: 10px;
 }
+.btn-mic  {
+  width: auto !important;
+  padding: 1px 10px;
+  font-size: 12px;  
+}

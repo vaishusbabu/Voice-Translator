@@ -1,83 +1,76 @@
-// Importing necessary modules and components
-import React, { useState } from 'react'; // Importing React and useState hook
-import './App.css'; // Importing custom CSS for styling
-import languageList from './language.json'; // Importing a JSON file containing language information
-import axios from 'axios'; // Importing axios for making HTTP requests
-import { AudioMutedOutlined, AudioOutlined, SwapOutlined } from '@ant-design/icons'; // Importing icons from ant-design
 
-// Defining the Translator component
+//SpeechSynthesisUtterance
+import React, { useEffect, useState } from 'react';
+import './App.css';
+import languageList from './language.json';
+import axios from 'axios';
+import { AudioMutedOutlined, AudioOutlined, CopyOutlined, ShareAltOutlined, SoundOutlined, SwapOutlined } from '@ant-design/icons';
+
 export default function Translator() {
-    // Declaring state variables using useState hook
-    const [inputFormat, setInputFormat] = useState('en'); // Language of input text, default is English ('en')
-    const [outputFormat, setOutputFormat] = useState(''); // Language of output text, default is empty
-    const [translatedText, setTranslatedText] = useState('Translation'); // Text after translation, default is 'Translation'
-    const [inputText, setInputText] = useState(''); // Input text to be translated, default is empty
-    const [recognizing, setRecognizing] = useState(false); // Flag to track if speech recognition is active, default is false
+    const [inputFormat, setInputFormat] = useState('en');
+    const [outputFormat, setOutputFormat] = useState('');
+    const [translatedText, setTranslatedText] = useState('Translation');
+    const [inputText, setInputText] = useState('');
+    const [recognizing, setRecognizing] = useState(false);
 
-    // Initializing the speech recognition object
     let recognition;
     if (!('webkitSpeechRecognition' in window)) {
-        console.log('Web Speech API is not supported in this browser.'); // Logging if the browser doesn't support speech recognition
+        console.log('Web Speech API is not supported in this browser.');
     } else {
-        recognition = new window.webkitSpeechRecognition(); // Creating a new instance of speech recognition
-        recognition.continuous = false; // Setting recognition to be non-continuous
-        recognition.interimResults = false; // No interim results, only final result
-        recognition.lang = inputFormat; // Setting the language for recognition
+        recognition = new window.webkitSpeechRecognition();
+        recognition.continuous = false;
+        recognition.interimResults = false;
+        recognition.lang = inputFormat;
 
-        // Event handler for when recognition starts
         recognition.onstart = () => {
-            setRecognizing(true); // Setting recognizing state to true
+            setRecognizing(true);
         };
 
-        // Event handler for when recognition results are available
         recognition.onresult = (event) => {
-            setRecognizing(false); // Setting recognizing state to false
-            const speechToText = event.results[0][0].transcript; // Extracting the transcribed text from event
-            setInputText(speechToText); // Setting the inputText state to the transcribed text
+            setRecognizing(false);
+            const speechToText = event.results[0][0].transcript;
+            setInputText(speechToText);
         };
 
-        // Event handler for recognition errors
         recognition.onerror = (event) => {
-            setRecognizing(false); // Setting recognizing state to false
-            console.error('Speech recognition error', event.error); // Logging the error
+            setRecognizing(false);
+            console.error('Speech recognition error', event.error);
         };
 
-        // Event handler for when recognition ends
         recognition.onend = () => {
-            setRecognizing(false); // Setting recognizing state to false
+            setRecognizing(false);
         };
     }
 
-    // Function to start speech recognition
     const startRecognition = () => {
         if (recognition) {
-            recognition.lang = inputFormat; // Setting the language for recognition
-            recognition.start(); // Starting speech recognition
+            recognition.lang = inputFormat;
+            recognition.start();
         }
     };
 
-    // Function to reverse input and output languages
     const handleReverseLanguage = () => {
-        const value = inputFormat; // Temporarily storing the input language
-        setInputFormat(outputFormat); // Setting input language to output language
-        setOutputFormat(value); // Setting output language to stored input language
-        setInputText(''); // Clearing the input text
-        setTranslatedText('Translation'); // Resetting the translated text
+        const value = inputFormat;
+        setInputFormat(outputFormat);
+        setOutputFormat(value);
+        setInputText('');
+        setTranslatedText('Translation');
     };
 
-    // Function to clear input text and reset translated text
     const handleRemoveInputText = () => {
-        setInputText(''); // Clearing the input text
-        setTranslatedText('Translation'); // Resetting the translated text
+        setInputText('');
+        setTranslatedText('Translation');
     };
-
-    // Function to handle the translation process
+    const generateMailtoLink = () => {
+        const subject = encodeURIComponent("Translated Text");
+        const body = encodeURIComponent(translatedText);
+        return `mailto:?subject=${subject}&body=${body}`;
+    };
     const handleTranslate = async () => {
-        if (!inputText || !inputFormat || !outputFormat) return; // Return if any required field is missing
+        if (!inputText || !inputFormat || !outputFormat) return;
 
-        setTranslatedText('Translating...'); // Setting a temporary translating message
+        setTranslatedText('Translating...');
 
-        // Options for the API request
         const options = {
             method: 'POST',
             url: 'https://microsoft-translator-text.p.rapidapi.com/translate',
@@ -97,17 +90,57 @@ export default function Translator() {
         };
 
         try {
-            const response = await axios.request(options); // Making the API request
-            const translation = response.data[0].translations[0].text; // Extracting the translation from the response
-            console.log("translation", translation); // Logging the translation
-            setTranslatedText(translation); // Setting the translated text
+            const response = await axios.request(options);
+            const translation = response.data[0].translations[0].text;
+            console.log("translation", translation);
+            setTranslatedText(translation);
         } catch (error) {
-            console.error(error); // Logging any error
-            setTranslatedText('Error in translation'); // Setting an error message
+            console.error(error);
+            setTranslatedText('Error in translation');
         }
     };
 
-    // Rendering the component
+    useEffect(() => {
+        window.speechSynthesis.onvoiceschanged = () => {
+            const voices = window.speechSynthesis.getVoices();
+            console.log('Voices loaded:', voices);
+        };
+    }, []);
+
+    const handleSpeak = () => {
+        if (translatedText && translatedText !== 'Translation' && translatedText !== 'Translating...' && translatedText !== 'Error in translation') {
+            const utterance = new SpeechSynthesisUtterance(translatedText);
+            utterance.lang = outputFormat;
+
+            const voices = window.speechSynthesis.getVoices();
+            console.log('Available voices:', voices);
+
+            const supportedVoices = voices.filter(voice => voice.lang.startsWith(outputFormat.split('-')[0]));
+            console.log(`Supported voices for ${outputFormat}:`, supportedVoices);
+
+            if (supportedVoices.length > 0) {
+                utterance.voice = supportedVoices[0];
+                utterance.onerror = (event) => {
+                    console.error('Speech synthesis error:', event.error);
+                };
+                window.speechSynthesis.speak(utterance);
+            } else {
+                console.warn(`Speech synthesis for language ${outputFormat} is not supported.`);
+                alert(`Speech synthesis for language ${outputFormat} is not supported.`);
+            }
+        }
+    };
+
+    const handleCopy = () => {
+        if (translatedText && translatedText !== 'Translation' && translatedText !== 'Translating...' && translatedText !== 'Error in translation') {
+            navigator.clipboard.writeText(translatedText).then(() => {
+                console.log("copied!");
+            }).catch(err => {
+                console.error('Failed to copy text: ', err);
+            });
+        }
+    };
+
     return (
         <div className="container">
             <div className="row1">
@@ -149,13 +182,23 @@ export default function Translator() {
                         placeholder='Enter Text'
                         onChange={(e) => setInputText(e.target.value)} />
                 </div>
-                <button onClick={startRecognition} disabled={recognizing} className="audioButton">
+                <button onClick={startRecognition} disabled={recognizing} >
                     {recognizing ? <AudioOutlined /> : <AudioMutedOutlined />}
                 </button>
-                <div className="outputText">{translatedText}</div>
-                <button>
-                    
-                </button>
+                <div className="outputText">{translatedText}
+                    {translatedText !== 'Translation' && translatedText !== 'Translating...' && translatedText !== 'Error in translation' && (
+                        <>
+                            <div className='buttons'>
+                                <SoundOutlined onClick={handleSpeak} />
+                                <CopyOutlined onClick={handleCopy} />
+                                <a href={generateMailtoLink()}>
+                                    <ShareAltOutlined />
+                                </a>
+                            </div>
+                        </>
+                    )}
+                </div>
+
             </div>
             <div className="row3">
                 <button className='btn'
@@ -167,3 +210,222 @@ export default function Translator() {
         </div>
     );
 }
+
+
+//Microsoft Speech Text
+// import React, { useEffect, useState } from 'react';
+// import './App.css';
+// import languageList from './language.json';
+// import axios from 'axios';
+// import { AudioMutedOutlined, AudioOutlined, CopyOutlined, ShareAltOutlined, SoundOutlined, SwapOutlined } from '@ant-design/icons';
+
+// export default function Translator() {
+//     const [inputFormat, setInputFormat] = useState('en');
+//     const [outputFormat, setOutputFormat] = useState('');
+//     const [translatedText, setTranslatedText] = useState('Translation');
+//     const [inputText, setInputText] = useState('');
+//     const [recognizing, setRecognizing] = useState(false);
+
+//     let recognition;
+//     if (!('webkitSpeechRecognition' in window)) {
+//         console.log('Web Speech API is not supported in this browser.');
+//     } else {
+//         recognition = new window.webkitSpeechRecognition();
+//         recognition.continuous = false;
+//         recognition.interimResults = false;
+//         recognition.lang = inputFormat;
+
+//         recognition.onstart = () => {
+//             setRecognizing(true);
+//         };
+
+//         recognition.onresult = (event) => {
+//             setRecognizing(false);
+//             const speechToText = event.results[0][0].transcript;
+//             setInputText(speechToText);
+//         };
+
+//         recognition.onerror = (event) => {
+//             setRecognizing(false);
+//             console.error('Speech recognition error', event.error);
+//         };
+
+//         recognition.onend = () => {
+//             setRecognizing(false);
+//         };
+//     }
+
+//     const startRecognition = () => {
+//         if (recognition) {
+//             recognition.lang = inputFormat;
+//             recognition.start();
+//         }
+//     };
+
+//     const handleReverseLanguage = () => {
+//         const value = inputFormat;
+//         setInputFormat(outputFormat);
+//         setOutputFormat(value);
+//         setInputText('');
+//         setTranslatedText('Translation');
+//     };
+
+//     const handleRemoveInputText = () => {
+//         setInputText('');
+//         setTranslatedText('Translation');
+//     };
+
+//     const handleTranslate = async () => {
+//         if (!inputText || !inputFormat || !outputFormat) return;
+
+//         setTranslatedText('Translating...');
+
+//         const options = {
+//             method: 'POST',
+//             url: 'https://microsoft-translator-text.p.rapidapi.com/translate',
+//             params: {
+//                 'api-version': '3.0',
+//                 to: outputFormat,
+//                 from: inputFormat
+//             },
+//             headers: {
+//                 'x-rapidapi-key': '12bee6d5f7msh0678d481138dcf0p114d09jsne8bd4a5a74e3',
+//                 'x-rapidapi-host': 'microsoft-translator-text.p.rapidapi.com',
+//                 'Content-Type': 'application/json'
+//             },
+//             data: [{
+//                 Text: inputText
+//             }]
+//         };
+
+//         try {
+//             const response = await axios.request(options);
+//             const translation = response.data[0].translations[0].text;
+//             console.log("translation", translation);
+//             setTranslatedText(translation);
+//         } catch (error) {
+//             console.error(error);
+//             setTranslatedText('Error in translation');
+//         }
+//     };
+
+//     useEffect(() => {
+//         window.speechSynthesis.onvoiceschanged = () => {
+//             const voices = window.speechSynthesis.getVoices();
+//             console.log('Voices loaded:', voices);
+//         };
+//     }, []);
+
+//     const handleSpeak = async () => {
+//         if (translatedText && translatedText !== 'Translation' && translatedText !== 'Translating...' && translatedText !== 'Error in translation') {
+//             const options = {
+//                 method: 'POST',
+//                 url: 'https://microsoft-text-to-speech-tts-edge-azure.p.rapidapi.com/addnew/',
+//                 headers: {
+//                     'x-rapidapi-key': '12bee6d5f7msh0678d481138dcf0p114d09jsne8bd4a5a74e3',
+//                     'x-rapidapi-host': 'microsoft-text-to-speech-tts-edge-azure.p.rapidapi.com',
+//                     'Content-Type': 'application/json'
+//                 },
+//                 data: {
+//                     text: translatedText,
+//                     voice: 'en-US-SteffanNeural'
+//                 }
+//             };
+
+//             try {
+//                 const response = await axios.request(options);
+//                 const audioUrl = response.data.audio_url; // Assuming the API returns an audio URL
+//                 const audio = new Audio(audioUrl);
+//                 audio.play();
+//             } catch (error) {
+//                 console.error('Error in text-to-speech:', error);
+//                 alert('Error in text-to-speech');
+//             }
+//         }
+//     };
+
+//     const handleCopy = () => {
+//         if (translatedText && translatedText !== 'Translation' && translatedText !== 'Translating...' && translatedText !== 'Error in translation') {
+//             navigator.clipboard.writeText(translatedText).then(() => {
+//                 console.log("copied!");
+//             }).catch(err => {
+//                 console.error('Failed to copy text: ', err);
+//             });
+//         }
+//     };
+
+//     const generateMailtoLink = () => {
+//         const subject = encodeURIComponent("Translated Text");
+//         const body = encodeURIComponent(translatedText);
+//         return `mailto:?subject=${subject}&body=${body}`;
+//     };
+
+//     return (
+//         <div className="container">
+//             <div className="row1">
+//                 <select value={inputFormat} onChange={(e) => setInputFormat(e.target.value)}>
+//                     {Object.keys(languageList).map((key, index) => {
+//                         const language = languageList[key];
+//                         return (
+//                             <option key={index} value={key}>{language.name}</option>
+//                         );
+//                     })}
+//                 </select>
+//                 <SwapOutlined onClick={handleReverseLanguage} />
+
+//                 <select value={outputFormat} onChange={(e) => {
+//                     setOutputFormat(e.target.value);
+//                     setTranslatedText('Translation');
+//                 }}>
+//                     {Object.keys(languageList).map((key, index) => {
+//                         const language = languageList[key];
+//                         return (
+//                             <option key={index + 118} value={key}>{language.name}</option>
+//                         );
+//                     })}
+//                 </select>
+//             </div>
+//             <div className="row2">
+//                 <div className="inputText">
+//                     <svg className='removeinput'
+//                         style={{ display: (inputText.length) ? "block" : "none" }}
+//                         onClick={handleRemoveInputText}
+//                         focusable="false"
+//                         xmlns="http://www.w3.org/2000/svg"
+//                         viewBox="0 0 24 24">
+//                         <path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z">
+//                         </path>
+//                     </svg>
+//                     <textarea type="text"
+//                         value={inputText}
+//                         placeholder='Enter Text'
+//                         onChange={(e) => setInputText(e.target.value)} />
+//                 </div>
+//                 <button onClick={startRecognition} disabled={recognizing} >
+//                     {recognizing ? <AudioOutlined /> : <AudioMutedOutlined />}
+//                 </button>
+//                 <div className="outputText">{translatedText}
+//                     {translatedText !== 'Translation' && translatedText !== 'Translating...' && translatedText !== 'Error in translation' && (
+//                         <>
+//                             <div className='buttons'>
+//                                 <SoundOutlined onClick={handleSpeak} />
+//                                 <CopyOutlined onClick={handleCopy} />
+//                                 <a href={generateMailtoLink()}>
+//                                     <ShareAltOutlined />
+//                                 </a>
+//                             </div>
+//                         </>
+//                     )}
+//                 </div>
+
+//             </div>
+//             <div className="row3">
+//                 <button className='btn'
+//                     onClick={handleTranslate}>
+//                     <i className="fa fa-spinner fa-spin"></i>
+//                     <span className='translate'>Translate</span>
+//                 </button>
+//             </div>
+//         </div>
+//     );
+// }

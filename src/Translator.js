@@ -1,3 +1,5 @@
+
+//SpeechSynthesisUtterance
 import React, { useEffect, useState } from 'react';
 import './App.css';
 import languageList from './language.json';
@@ -59,7 +61,11 @@ export default function Translator() {
         setInputText('');
         setTranslatedText('Translation');
     };
-
+    const generateMailtoLink = () => {
+        const subject = encodeURIComponent("Translated Text");
+        const body = encodeURIComponent(translatedText);
+        return `mailto:?subject=${subject}&body=${body}`;
+    };
     const handleTranslate = async () => {
         if (!inputText || !inputFormat || !outputFormat) return;
 
@@ -176,16 +182,23 @@ export default function Translator() {
                         placeholder='Enter Text'
                         onChange={(e) => setInputText(e.target.value)} />
                 </div>
-                <button onClick={startRecognition} disabled={recognizing} >
+                <button
+                    className="btn btn-mic btn-primary"
+                    onClick={startRecognition}
+                    disabled={recognizing}
+                    style={{ padding: '5px 10px', fontSize: '12px' }}
+                >
                     {recognizing ? <AudioOutlined /> : <AudioMutedOutlined />}
                 </button>
                 <div className="outputText">{translatedText}
                     {translatedText !== 'Translation' && translatedText !== 'Translating...' && translatedText !== 'Error in translation' && (
                         <>
                             <div className='buttons'>
-                                <SoundOutlined />
-                                <CopyOutlined />
-                                <ShareAltOutlined />
+                                <SoundOutlined onClick={handleSpeak} />
+                                <CopyOutlined onClick={handleCopy} />
+                                <a href={generateMailtoLink()}>
+                                    <ShareAltOutlined />
+                                </a>
                             </div>
                         </>
                     )}

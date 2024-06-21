@@ -183,7 +183,7 @@ export default function Translator() {
                         onChange={(e) => setInputText(e.target.value)} />
                 </div>
                 <button
-                    className="btn btn-mic btn-primary"
+                    className="btnbtn-mic btn-primary"
                     onClick={startRecognition}
                     disabled={recognizing}
                     style={{ padding: '5px 10px', fontSize: '12px' }}
